@@ -145,7 +145,7 @@ CDC is the CMS and admin panel agnostic mechanism for capturing changes on the d
 DocumentDB does not expose a native CDC stream to external consumers. A Lambda ESM polls (polling managed by AWS) the DocumentDB change stream directly. The consumer Lambda is invoked with batches of events. It deduplicates by ObjectID + timestamp (LWW), and publishes to the EventBridge Bus.
 
 Cost considerations (mid-2026):
-- Networking: DocumentDB, Lambda, and EventBridge each require a VPC interface endpoint (~\$25/month for 3 endpoints) or a NAT Gateway (~\$35/month).
+- Networking: DocumentDB, Lambda, and EventBridge each require a VPC interface endpoint (\~\\$25/month for 3 endpoints) or a NAT Gateway (\~\\$35/month).
 - Lambda ESM batching limits invocation frequency. Negligible cost for admin workflows
 
 **Aurora DSQL CDC:**
@@ -153,7 +153,7 @@ Cost considerations (mid-2026):
 Aurora DSQL streams CDC events natively to Kinesis Data Streams. EventBridge Pipes connects the Kinesis stream to the EventBridge Bus with built-in filtering and transformation. No additional Lambda required. Aurora DSQL CDC payloads include a transaction ID, enabling transaction-level reconstruction if ever needed. For read model generation, eventual consistency and latest-state delivery are sufficient.
 
 Cost considerations (mid-2026):
-- 1 Kinesis shard can stream 1 MB/s. 1-2 shards handle admin workflows comfortably (~$26/month for 2 shards).
+- 1 Kinesis shard can stream 1 MB/s. 1-2 shards handle admin workflows comfortably (\~\\$26/month for 2 shards).
 - PUT payload costs are negligible for admin event volumes.
 - EventBridge Pipes are free or negligible for admin event volumes
 
