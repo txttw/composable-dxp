@@ -1,2 +1,5 @@
-# composable-dxp
-A high-level architectural proposal for a composable DXP (Digital Experience Platform)
+# Composable distributed DXP (Digital Experience Platform): Enterprise Architecture Case Study
+
+A high-level architectural proposal for a **composable DXP (Digital Experience Platform)**. The presented technical solution is aligned with the operational constraints and strategic business realities discussed under **Guiding Principles** and **Business Context**. Unlike a traditional CMS — which enforces a single, unified content model — this composable DXP consists of multiple specialised content models and related tools, integrated into a unified experience. This approach shift and its benefits are discussed in Chapter 3. The architecture connects the admin side and the presentation side through an event-driven pipeline, separating authoring from delivery via CQRS, and deploys across multiple regions with a layered caching strategy. This document covers change capture, event pipeline design, framework selection, authentication, observability, cross-app integration patterns, and infrastructure decisions. Implementation details, data models, IaC, and networking configuration are out of scope.
+
+[Read Case study](/docs/dxp-architecture.md)
