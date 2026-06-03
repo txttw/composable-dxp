@@ -1,7 +1,7 @@
 # Composable distributed DXP (Digital Experience Platform): Enterprise Architecture Case Study  
 
 Created by: Tamas Horvath  
-Last updated: 2026-06-02
+Last updated: 2026-06-03
 
 ## Executive Summary
 
@@ -28,10 +28,11 @@ The architecture described in this document is **pattern-driven**. The business 
 
 | Pattern | Example Domain | Description |
 |---|---|---|
-| **Large Host Application** | Marketing, Education | A full host app with its own design system, shell, and Micro-frontend (MFE) composition surface. Two instances show that the same architecture supports multiple distinct products. |
+| **Large Host Application** | Marketing, Education | A full host app with its own design system, shell, Micro-frontend (MFE) composition surface. Two instances show that the same architecture supports multiple distinct products. |
 | **Small Domain Micro-frontend (MFE)** | Legal | A focused content domain with no dedicated host. Content is exposed as MFEs integrated into an existing host app. |
 | **In-House External System** | Webshop | A separately owned and deployed internal system. This architecture consumes its data read-only. |
-| **Third-Party Read-Only Integration** | Events SaaS | An external SaaS platform. Data is ingested via webhook or polling, normalised, and fed into the internal event pipeline. No write-back. |
+| **Third-Party Read-only Integration** | Events SaaS | An external SaaS platform. Data is ingested via webhook or polling, normalised, and fed into the internal event pipeline. No write-back. |
+| **Third-Party Write-back Integration** | Marketing | Marketing host's application layer writes to external Campaign manager or CRM. See Chapter 7 |
 | **Cross-App Thin Coupling** | Webshop cart icon | A lightweight synchronous data dependency between two separate applications. |
 
 ### Domain Summary
@@ -71,7 +72,7 @@ The architecture described in this document is **pattern-driven**. The business 
 
 ### Large Host Applications (Marketing, Education)
 
-Marketing and Education are two large, distinct applications. They share the same underlying architecture — the same MFE framework, service layer (BFF pattern), caching strategy, and event pipeline — but are independently deployed with separate design systems, React singleton contexts, and host shells. They are not the same app with different content, they are two separate products that are built on the same platform.
+Marketing and Education are two large, distinct applications. They share the same underlying architectural patterns: MFE, service layer (BFF or dedicated microservice pattern), caching strategy, and event pipeline — but are independently deployed with separate application layer, design systems, React singleton contexts, and host shells. They are not the same app with different content, they are two separate products that are built on the same platform.
 
 The two hosts may be connected by integration: for example, the Marketing host using Edu content or a training recommendation component can be surfaced either via Data sharing (EventBridge Bus) or MFEs via application-level Module Federation. This demonstrates that composition can cross host boundaries without requiring shared deployment or a monolithic shell.
 
@@ -83,9 +84,9 @@ Legal is a focused content domain that does not require its own host application
 
 The Webshop is an internally owned but separately deployed system with its own architecture, team, and deployment lifecycle. This architecture treats it as a read-only data source: product data (titles, descriptions, images, pricing) is consumed for recommendation widgets. Cart state is consumed for the cart icon. No checkout or cart management is implemented here, any transactional action is a redirect to the Webshop's own frontend.
 
-### Third-Party Read-Only Integration (Events SaaS)
+### Third-Party Integration (Events SaaS)
 
-The Events SaaS is an external platform that manages the full event lifecycle. This architecture ingests event catalogue and agenda data one-way — via webhook (push) or periodic API polling (pull) — normalises it into the internal schema, and feeds it into the event pipeline similarly as first-party content. No write operations are performed against the SaaS platform. Any user action (registration, RSVP) is a redirect to the SaaS platform's own frontend.
+The Events SaaS is an external platform that manages the full event lifecycle. This architecture ingests event catalogue and agenda data one-way — via webhook (push) or periodic API polling (pull) — normalises it into the internal schema, and feeds it into the event pipeline similarly as first-party content. If write-back (e.g. RSVP) required, Chapter 7 (Application layer) discusses the use-case.
 
 
 ## 3. The Composable DXP in Context
@@ -425,24 +426,15 @@ The architecture discussed two primary areas of focus so far:
 Beyond these, host applications may require their own **service capabilities** — business logic, user state, and interaction handling that does not originate from an admin panel and is not about delivering centrally authored content.
 
 These service capabilities can be served by
-- separate microservice tier in complex cases
-- service layer added to the host MFEs (e.g. Marketing, Edu)
+- service layer (as BFF) added to the host MFEs (e.g. Marketing, Edu) for simpler use-cases
+- separate microservice tier for operations that need independent scaling, cross-MFE scope, or complex orchestration
 
-| Domain | Service capabilities |
-|---|---|
-| Marketing | User preferences (language, theme), saved/favourited items |
-| Education | Lesson, module and course completions, Q&A enrolment state, progress aggregation |
+| Domain | Capabilities | Application layer | 
+|---|---|---|
+| Marketing | User preferences, Contact forms, CRM, marketing automation, interfacing with campaign management systems | Microservice tier with dedicated EventBridge Bus |
+| Education | Lesson, module and course completions, Q&A enrolment state, progress aggregation | Service layer implemented in BFF + independently scaleable VoD authorization microservice | 
 
-These are not complex capabilities, therefore the service layer approach is sufficient. The BFF deployable as part of each host application is a natural service layer. Integrates well with Modern.js (RPC style functions), extensible, REST-based under the hood, and capable of handling structured business logic.
- 
-### Storage
- 
-DynamoDB is appropriate for both domains (Marketing, Edu). Application state separation from the read model and service level separation are both crucial to separate concerns and provide service autonomy on the data level.
 
-Writes originate from the user's nearest regional server, therefore Global Tables are justified for low latency writes. Global table replication ensures a write landing in one region is available to all regions for subsequent requests.
- 
-Eventual consistency and Last Write Wins (LWW) conflict resolution are acceptable. A user switching regions between concurrent writes on the same record is not a realistic scenario.
- 
 ### Service Layer 
  
 **Modeern.js BFF endpoints** are the right fit for structured service operations with auth (JWT signature validation), input validation, business logic and structured error handling. Hono is a micro-framework that can be deployed as a server or as serverless (AWS Lambda) functions depending on non-functional requirements.
@@ -455,13 +447,52 @@ Example Education service endpoints:
  
 All service endpoints must validate the user's JWT before performing any read or write involving user-specific or private data.
  
+### Application EventBridge Bus
+ 
+User interactions that trigger complex business logic (multiple microservices concerned) or write to external systems follow a different pattern from from simple internal state changes. 
+The BFF handles the request, validates the user, performs any necessary local write (e.g. storing the submission), then **publishes a business event to a dedicated Application EventBridge Bus** (se.g. Marketing Event bus or Edu event bus).
+ 
+```mermaid
+flowchart TD
+    A((User action))  --> B[Validation in BFF]
+    B --> C{Is there complex Business Logic}
+    C -->|No| D[Process in BFF, local write if needed]
+    C -->|Yes| E0[PutEvent to Application EventBridge Bus]
+    E0 --> E[Application EventBridge Bus]
+    E -->|One step Businnes logic| F[Lambda handler, e.g. CRM or Campaign integration]
+    E -->|Multi-step durable workflow| G[Step function state-machine]
+    E -->|Complex multi-service Businnes logic| H[Microservices]
+```
+ 
+The Application Bus carries business events: `ContactFormSubmitted`, `CourseCompleted`, `UserSubscribed`, `EventRegistrationRequested`. Each event routes to the relevant consumer independently. The BFF publishes the event and returns. Downstream integration is decoupled from the user's request lifecycle.
+ 
+**Lambda** consumer can handle simple business logic or writing to external services e.g. CRM. 
+**Step Functions** are appropriate for multi-step or long-running workflows, e.g. a lead nurturing sequence triggered by a contact form, an onboarding flow after course enrolment, a certification issuance process. Step Functions provide built-in retry, error handling, and state management without custom orchestration code.
+**Microservice tier:** if a specific integration domain grows complex enough to require independent deployment and scaling, it deploys as a standalone service subscribing to the Application Bus. The BFF does not change, it continues publishing events, and the new service becomes an additional consumer.
+ 
+The distributed microservice pattern is established by the Application EventBridge Bus but this document does not design a microservice tier, because it is highly application specific and does not relevant to understand this architecture.
+ 
+### Storage
+ 
+DynamoDB is appropriate for both domains (Marketing, Edu). Application state separation from the read model and service level separation are both crucial to separate concerns and provide service autonomy on the data level.
+
+Writes originate from the user's nearest regional server, therefore Global Tables are justified for low latency writes. Global table replication ensures a write landing in one region is available to all regions for subsequent requests.
+ 
+Eventual consistency and Last Write Wins (LWW) conflict resolution are acceptable. A user switching regions between concurrent writes on the same record is not a realistic scenario.
+ 
+
 ### Presentation and Caching
  
 User state is read via Data Loaders or Server Components using the same patterns as content. On write, the service handler invalidates the relevant Redis key using the same `customKey` scheme. Low frequency and highly dynamic data reads should directly query DinamoDB, cache is not justified.
 
-## 8 Integration Topology (high level)
+## 8. Integration Topology (high level)
 
 ![High-level integration topology](/docs/resources/integration-topology.png)
+
+### Application Layer
+
+![High-level integration topology](/docs/resources/application-layer.png)
+
 
 ## 9. Search and AI Assistance
  
@@ -650,8 +681,8 @@ For the CDC event pipeline details see Chapter 4. For Read Model Generation deta
 
 ### Trace Backends
 
--**AWS X-Ray** as a native AWS integration, simple setup, good for service maps.
--**Grafana Tempo + Prometheus or others** if the team preferes alternatives. 
+- **AWS X-Ray** as a native AWS integration, simple setup, good for service maps.
+- **Grafana Tempo + Prometheus or others** if the team preferes alternatives. 
 
 X-Ray is the lowest-friction starting point in an AWS-native stack, migrating later is low-cost given ADOT's vendor neutrality.
 
