@@ -108,13 +108,14 @@ A **headless CMS** decouples content from presentation. Structured content is st
  
 ### Roles and Responsibilities
  
-The composable model maps cleanly onto three distinct roles, each with a single, well-defined domain of responsibility:
+The composable model maps cleanly onto distinct roles, each with a single, well-defined domain of responsibility:
  
 | Role | Responsibility | Domain expertise |
 |---|---|---|
 | **SMEs / Editors / Admins** | Content, data and semantic intent | What to say, what to feature, what a piece of content *means* |
 | **UX/UI research and design** | Versioned design system | How content and intent is expressed |
 | **Frontend developers** | MFE data layer + frontend development | How system components are built, tested, and composed — independent of actual content |
+| **Backend developers** | Application layer | How application specific Business logic is executed in a scalible, reliable way |
  
 **Rationale:** Marketers, product managers, legal teams, educators know their content domain. They understand what "promotional" means, what a product highlight should communicate, what a legal notice requires. Designers understand how to present a specific intent consistently. Developers understand how to build components that are testable, accessible, and maintainable. This separation is not arbitrary process overhead, it reflects where each role's expertise actually lies.
 
