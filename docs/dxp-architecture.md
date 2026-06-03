@@ -470,7 +470,7 @@ The Application Bus carries business events: `ContactFormSubmitted`, `CourseComp
 - **Step Functions** are appropriate for multi-step or long-running workflows, e.g. a lead nurturing sequence triggered by a contact form, an onboarding flow after course enrolment, a certification issuance process. Step Functions provide built-in retry, error handling, and state management without custom orchestration code.
 - **Microservice tier:** if a specific integration domain grows complex enough to require independent deployment and scaling, it deploys as a standalone service subscribing to the Application Bus. The BFF does not change, it continues publishing events, and the new service becomes an additional consumer.
  
-The distributed microservice pattern is established by the Application EventBridge Bus but this document does not design a microservice tier, because it is highly application specific and does not relevant to understand this architecture.
+The distributed microservice pattern is established but this document does not design exact services, because they are highly application specific and does not relevant to understand this architecture.
  
 ### Storage
  
