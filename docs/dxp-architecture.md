@@ -1,4 +1,4 @@
-# Composable distributed DXP (Digital Experience Platform): Enterprise Architecture Case Study  
+# Composable Distributed DXP (Digital Experience Platform): Enterprise Architecture Case Study  
 
 Created by: Tamas Horvath  
 Last updated: 2026-06-03
@@ -450,8 +450,8 @@ All service endpoints must validate the user's JWT before performing any read or
  
 ### Application EventBridge Bus
  
-User interactions that trigger complex business logic (multiple microservices concerned) or write to external systems follow a different pattern from from simple internal state changes. 
-The BFF handles the request, validates the user, performs any necessary local write (e.g. storing the submission), then **publishes a business event to a dedicated Application EventBridge Bus** (se.g. Marketing Event bus or Edu event bus).
+User interactions that trigger complex business logic (multiple microservices concerned) or write to external systems follow a different pattern from simple internal state changes. 
+The BFF handles the request, validates the user, performs any necessary local write (e.g. storing the submission), then **publishes a business event to a dedicated Application EventBridge Bus** (e.g. Marketing Event bus or Edu event bus).
  
 ```mermaid
 flowchart TD
@@ -553,14 +553,14 @@ Single pool, cross-region validation: JWKS are cached but, token issuance (login
 
 ### Admin Users
 
-Owned admin panels (CMS or any custom-built panel) recommended to use **AWS Cognito** as an identity broker regardless of the IdP protocol to provide a clear security boundary and operational consistency across CMss and admin panels: 
+Owned admin panels (CMS or any custom-built panel) recommended to use **AWS Cognito** as an identity broker regardless of the IdP protocol to provide a clear security boundary and operational consistency across CMSs and admin panels: 
 - Cognito is configured as a federated identity provider, delegating authentication to the company's central directory via OIDC or SAML.
 - Cognito issues JWTs used by the admin panels.
 - ALB enforces Cognito authentication at the listener rule level: unauthenticated requests are rejected before reaching the CMS or Admin panel, and the ALB handles the OAuth flow directly rather than using application code.
 - Admin services still implement authorization using forwarded claims in the header `X-Amzn-Oidc-Data`, `X-Amzn-Oidc-Identity`
 - Admin services get the raw Cognito access token in the `X-Amzn-Oidc-Accesstoken` header. The admin backend can use this token if it needs to make authorized API calls directly to other admin services on behalf of the user.
 
-Third-party and in-House external systems handle their own auth independently and are not in scope for IdP integration.
+Third-party and in-house external systems handle their own auth independently and are not in scope for IdP integration.
 
 ## 11. Cross-App Thin Coupling
 
