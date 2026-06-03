@@ -464,11 +464,11 @@ flowchart TD
     E -->|Complex multi-service Businnes logic| H[Microservices]
 ```
  
-The Application Bus carries business events: `ContactFormSubmitted`, `CourseCompleted`, `UserSubscribed`, `EventRegistrationRequested`. Each event routes to the relevant consumer independently. The BFF publishes the event and returns. Downstream integration is decoupled from the user's request lifecycle.
+The Application Bus carries business events: `ContactFormSubmitted`, `CourseCompleted`, `UserSubscribed`, `EventRegistrationRequested`. Each event routes to the relevant consumer independently. The BFF publishes the event and returns. Downstream integration is decoupled from the user's request lifecycle. To fetch application data the BFF should use the downstream microservice's public API. Microservices interact via the application's EventBridge Bus (async) or directly via ECS Service Connect (sync).  
  
-**Lambda** consumer can handle simple business logic or writing to external services e.g. CRM. 
-**Step Functions** are appropriate for multi-step or long-running workflows, e.g. a lead nurturing sequence triggered by a contact form, an onboarding flow after course enrolment, a certification issuance process. Step Functions provide built-in retry, error handling, and state management without custom orchestration code.
-**Microservice tier:** if a specific integration domain grows complex enough to require independent deployment and scaling, it deploys as a standalone service subscribing to the Application Bus. The BFF does not change, it continues publishing events, and the new service becomes an additional consumer.
+- **Lambda** consumer can handle simple business logic or writing to external services e.g. CRM. 
+- **Step Functions** are appropriate for multi-step or long-running workflows, e.g. a lead nurturing sequence triggered by a contact form, an onboarding flow after course enrolment, a certification issuance process. Step Functions provide built-in retry, error handling, and state management without custom orchestration code.
+- **Microservice tier:** if a specific integration domain grows complex enough to require independent deployment and scaling, it deploys as a standalone service subscribing to the Application Bus. The BFF does not change, it continues publishing events, and the new service becomes an additional consumer.
  
 The distributed microservice pattern is established by the Application EventBridge Bus but this document does not design a microservice tier, because it is highly application specific and does not relevant to understand this architecture.
  
