@@ -45,12 +45,12 @@ The architecture described in this document is **pattern-driven**. The business 
 | Events | 3rd Party Integration (SaaS) | Event catalogue, session agendas | External — no admin surface in this system |
 | Webshop | Internal (separate system) | Product catalogue, cart state | Separate system — read-only from this architecture |
 
-****System Context diagram for a Composable DXP**
+**System Context diagram for a Composable DXP**
 
 ***Note:*** *As gthub natively supports Mermaid I tried its C4 diagram type an experimental feature but it doesn't seem to support advanced line routing. Excuse me for the mess, I will soon move to Structurizr and image export.*
   
 ```mermaid
- C4Context
+  C4Context
       title System Context diagram for a Composable DXP
       Enterprise_Boundary(bE, "Multi department company") {
         Person(smeM, "Marketing SME", "Marketing strategy and content expert")
@@ -65,7 +65,7 @@ The architecture described in this document is **pattern-driven**. The business 
             System(hEduP, "EDU presentation application", "Allows customers to view training modules, practice, etc.")
             System(hEduS, "EDU service layer", "Handles gated auth, quizes, course cmopletitions and certification")
         }
-        System_Boundary(bA, "Infra Boundary") {
+        System_Boundary(bInfra, "Infra Boundary") {
             System(infra, "DXP core infrastructure", "Backbone services of the DXP")
         }
         System_Boundary(bA, "Admin Boundary") {
