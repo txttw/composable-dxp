@@ -44,7 +44,64 @@ The architecture described in this document is **pattern-driven**. The business 
 | Legal | Internal | Policy pages, compliance documents | Lightweight headless CMS or owned panel |
 | Events | 3rd Party Integration (SaaS) | Event catalogue, session agendas | External — no admin surface in this system |
 | Webshop | Internal (separate system) | Product catalogue, cart state | Separate system — read-only from this architecture |
+
+***Note:*** *As gthub natively supports Mermaid I tried its C4 diagram type an experimental feature but it doesn't seem to support advanced line routing. Excuse me for the mess, I will soon move to Structurizr and image export.*
   
+```mermaid
+ C4Context
+      title System Context diagram for a Composable DXP
+      Enterprise_Boundary(bE, "Multi department company") {
+        Person(smeM, "Marketing SME", "Marketing strategy and content expert")
+        Person(smeE, "Learning Specialist", "Expert of customer training")
+        Person(smeL, "Legal Representative", "Authors legal documents and pages")
+       
+        System_Boundary(appBM, "Marketin hostg App Boundary") {
+            System(hMarketingP, "Marketing presentation application", "Displays marketing content")
+            System(hMarketingS, "Marketing service layer", "Handles customer interaction, campaign integration etc.")
+        }
+        System_Boundary(appBE, "Edu host App Boundary") {
+            System(hEduP, "EDU presentation application", "Allows customers to view training modules, practice, etc.")
+            System(hEduS, "EDU service layer", "Handles gated auth, quizes, course cmopletitions and certification")
+        }
+        System_Boundary(bA, "Infra Boundary") {
+            System(infra, "DXP core infrastructure", "Backbone services of the DXP")
+        }
+        System_Boundary(bA, "Admin Boundary") {
+            System(marketingA, "Marketing CMS", "System managing marketing content")
+            System(eduA, "Edu Admin customer training", "A system managing training modules for customers")
+            System(legalA, "Legal CMS", "A system managing legal content")
+            
+        }
+        System_Boundary(bW, "In house external systems") {
+            System(webshop, "Webshop", "Companiy's webstore")
+        }
+      }
+      Enterprise_Boundary(bExt, "External service provider") {
+        System(events, "Events SaaS", "End-to-end digital event management")
+      }
+      Person(endUserA, "End user", "Views content, product prices, event catalog, completes training modules")
+      Rel(smeM, marketingA, "Determines strategy and marketing intent")
+      Rel(smeE, eduA, "Course design")
+      Rel(smeL, legalA, "Handles Legal documents")
+      
+      Rel(marketingA, infra, "Publishes marketing content")
+      Rel(eduA, infra, "Publishes courses")
+      Rel(legalA, infra, "Publishes legal document")
+      Rel(webshop, infra, "Sync products")
+      Rel(events, infra, "Sync event catalogue")
+
+      Rel(infra, hMarketingP, "Composes its own content model")
+      Rel(infra, hEduP, "Composes its own content model")
+
+      Rel(endUserA, hMarketingP, "Views marketing content, reads legal docs")
+      BiRel(hMarketingS, endUserA, "Recommendations, click stream, form sending")
+      
+      Rel(endUserA, hEduP, "View training modules")
+      BiRel(hEduP, endUserA, "Enrollment, training, certification")
+      UpdateLayoutConfig($c4ShapeInRow="16", $c4BoundaryInRow="5")
+
+```
+
 ### Key Non-Functional Requirements
 
 **Availability & Scale**
